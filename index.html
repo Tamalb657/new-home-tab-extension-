@@ -9,9 +9,16 @@
   <body>
     <main class="dashboard">
       <header class="top-bar">
-        <h1>Dashboard</h1>
+        <div>
+          <h1>Dashboard</h1>
+          <p id="clock" class="clock"></p>
+        </div>
         <button id="analytics-btn" class="icon-btn" aria-label="Open analytics">◴</button>
       </header>
+
+      <form id="search-form" class="search-form">
+        <input id="search-input" class="search-input" type="text" placeholder="Search web or enter URL" autocomplete="off" />
+      </form>
 
       <section>
         <h2 class="section-title">Smart Suggestions</h2>
@@ -21,6 +28,16 @@
       <section>
         <h2 class="section-title">Shortcuts</h2>
         <div id="shortcuts" class="grid tiles-grid"></div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Recent History</h2>
+        <div id="history" class="grid tiles-grid"></div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Quick Notes</h2>
+        <textarea id="notes" class="notes" placeholder="Write a quick note..."></textarea>
       </section>
     </main>
 
@@ -44,6 +61,7 @@
           <button class="range-btn active" data-range="today">Today</button>
           <button class="range-btn" data-range="7d">7 Days</button>
           <button class="range-btn" data-range="30d">30 Days</button>
+          <button id="clear-analytics" class="range-btn">Clear</button>
         </div>
         <div id="analytics-chart" class="analytics-chart"></div>
       </div>

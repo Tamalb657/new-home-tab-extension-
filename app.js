@@ -1,8 +1,10 @@
 const SHORTCUTS_KEY = "shortcuts";
 const USAGE_KEY = "usage_data";
+const NOTES_KEY = "notes";
 
 const shortcutsEl = document.getElementById("shortcuts");
 const suggestionsEl = document.getElementById("suggestions");
+const historyEl = document.getElementById("history");
 const template = document.getElementById("tile-template");
 
 const folderModal = document.getElementById("folder-modal");
@@ -12,12 +14,19 @@ const analyticsModal = document.getElementById("analytics-modal");
 const analyticsChart = document.getElementById("analytics-chart");
 
 let currentRange = "today";
+let noteSaveTimer;
 
 init().catch(console.error);
 
 async function init() {
   bindEvents();
-  await Promise.all([renderSuggestions(), renderShortcuts()]);
+  startClock();
+  await Promise.all([
+    renderSuggestions(),
+    renderShortcuts(),
+    renderRecentHistory(),
+    loadNotes()
+  ]);
 }
 
 function bindEvents() {
@@ -27,15 +36,53 @@ function bindEvents() {
     await renderAnalytics();
   });
   document.getElementById("analytics-close").addEventListener("click", () => analyticsModal.close());
+  document.getElementById("clear-analytics").addEventListener("click", async () => {
+    await chrome.storage.local.set({ [USAGE_KEY]: {} });
+    await renderAnalytics();
+  });
 
-  document.querySelectorAll(".range-btn").forEach((btn) => {
+  document.querySelectorAll(".range-btn[data-range]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      document.querySelectorAll(".range-btn").forEach((node) => node.classList.remove("active"));
+      document.querySelectorAll(".range-btn[data-range]").forEach((node) => node.classList.remove("active"));
       btn.classList.add("active");
       currentRange = btn.dataset.range;
       await renderAnalytics();
     });
   });
+
+  document.getElementById("search-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = document.getElementById("search-input");
+    const raw = input.value.trim();
+    if (!raw) return;
+
+    const destination = toSearchOrUrl(raw);
+    chrome.tabs.create({ url: destination });
+    input.value = "";
+  });
+
+  document.getElementById("notes").addEventListener("input", (event) => {
+    clearTimeout(noteSaveTimer);
+    noteSaveTimer = setTimeout(async () => {
+      await chrome.storage.local.set({ [NOTES_KEY]: event.target.value });
+    }, 250);
+  });
+}
+
+function startClock() {
+  const clock = document.getElementById("clock");
+  const tick = () => {
+    const now = new Date();
+    clock.textContent = now.toLocaleString([], {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+  tick();
+  setInterval(tick, 1000);
 }
 
 async function renderSuggestions() {
@@ -52,12 +99,26 @@ async function renderSuggestions() {
   });
 }
 
+async function renderRecentHistory() {
+  historyEl.innerHTML = "";
+  const recent = await chrome.history.search({ text: "", maxResults: 8, startTime: Date.now() - (1000 * 60 * 60 * 24 * 3) }).catch(() => []);
+
+  recent.forEach((item) => {
+    if (!item.url) return;
+    historyEl.append(createTile({
+      title: item.title || sanitizeDomain(item.url),
+      url: item.url,
+      favicon: faviconForUrl(item.url),
+    }));
+  });
+}
+
 async function renderShortcuts() {
   shortcutsEl.innerHTML = "";
   const { [SHORTCUTS_KEY]: shortcuts = [] } = await chrome.storage.local.get(SHORTCUTS_KEY);
 
   const folders = groupByFolder(shortcuts);
-  folders.root.forEach((shortcut) => shortcutsEl.append(createTile(shortcut)));
+  folders.root.forEach((shortcut) => shortcutsEl.append(createTile(shortcut, { managed: true })));
 
   Object.entries(folders.byId).forEach(([folderId, items]) => {
     const folderTile = createFolderTile(folderId, items);
@@ -67,7 +128,7 @@ async function renderShortcuts() {
   shortcutsEl.append(createQuickAddTile());
 }
 
-function createTile(entry) {
+function createTile(entry, options = {}) {
   const fragment = template.content.cloneNode(true);
   const tile = fragment.querySelector(".tile");
   const icon = fragment.querySelector(".tile-icon");
@@ -79,6 +140,17 @@ function createTile(entry) {
   tile.addEventListener("click", () => {
     chrome.tabs.create({ url: entry.url });
   });
+
+  if (options.managed) {
+    tile.title = "Right-click to remove";
+    tile.addEventListener("contextmenu", async (event) => {
+      event.preventDefault();
+      const shouldDelete = confirm(`Remove shortcut for ${entry.title || entry.url}?`);
+      if (!shouldDelete) return;
+      await removeShortcut(entry.id);
+      await renderShortcuts();
+    });
+  }
 
   return fragment;
 }
@@ -162,11 +234,11 @@ function createFolderTile(folderId, items) {
   row.className = "folder-row";
   const inner = document.createElement("div");
   inner.className = "folder-inner grid tiles-grid";
-  items.forEach((entry) => inner.append(createTile(entry)));
+  items.forEach((entry) => inner.append(createTile(entry, { managed: true })));
   row.append(inner);
 
   tile.addEventListener("click", () => row.classList.toggle("open"));
-  tile.addEventListener("pointerdown", (event) => {
+  tile.addEventListener("pointerdown", () => {
     const start = Date.now();
     const release = () => {
       if (Date.now() - start > 450) {
@@ -185,7 +257,7 @@ function createFolderTile(folderId, items) {
 function openFolderModal(name, items) {
   folderModalTitle.textContent = name;
   folderItems.innerHTML = "";
-  items.forEach((entry) => folderItems.append(createTile(entry)));
+  items.forEach((entry) => folderItems.append(createTile(entry, { managed: true })));
   folderModal.showModal();
 }
 
@@ -195,6 +267,18 @@ async function saveShortcut(shortcut) {
 
   shortcuts.push(shortcut);
   await chrome.storage.local.set({ [SHORTCUTS_KEY]: shortcuts });
+}
+
+async function removeShortcut(id) {
+  const { [SHORTCUTS_KEY]: shortcuts = [] } = await chrome.storage.local.get(SHORTCUTS_KEY);
+  const filtered = shortcuts.filter((item) => item.id !== id);
+  await chrome.storage.local.set({ [SHORTCUTS_KEY]: filtered });
+}
+
+async function loadNotes() {
+  const notes = document.getElementById("notes");
+  const data = await chrome.storage.local.get(NOTES_KEY);
+  notes.value = data[NOTES_KEY] || "";
 }
 
 async function renderAnalytics() {
@@ -291,4 +375,20 @@ function sanitizeDomain(url) {
 function faviconForUrl(url) {
   const domain = sanitizeDomain(url);
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+}
+
+function toSearchOrUrl(value) {
+  const hasScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value);
+  const normalized = hasScheme ? value : `https://${value}`;
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.hostname.includes(".")) {
+      return parsed.href;
+    }
+  } catch {
+    // no-op
+  }
+
+  return `https://www.google.com/search?q=${encodeURIComponent(value)}`;
 }

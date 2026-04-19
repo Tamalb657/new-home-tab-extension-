@@ -21,13 +21,32 @@ body {
   margin: 0 auto;
   padding: 24px;
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.clock {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.search-form {
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  background: #050505;
+  border: 1px solid var(--stroke);
+  color: #fff;
+  padding: 12px;
+  font-size: 0.95rem;
 }
 
 .section-title {
@@ -129,6 +148,7 @@ body {
 .analytics-controls {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .range-btn {
@@ -161,10 +181,16 @@ body {
   height: 12px;
 }
 
-.quick-add-input {
+.quick-add-input,
+.notes {
   width: 100%;
   background: #000;
   border: 1px solid var(--stroke);
   color: #fff;
   padding: 8px;
+}
+
+.notes {
+  min-height: 120px;
+  resize: vertical;
 }

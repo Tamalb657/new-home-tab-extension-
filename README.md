@@ -8,6 +8,7 @@ A lightweight New Tab replacement with:
 - Folder expansion (inline) and folder management modal.
 - Background service worker time tracking with idle-awareness.
 - Built-in analytics modal with SVG bars for Today / 7-day / 30-day usage.
+- Basic utility features: live clock, search box, recent-history tiles, quick notes, and analytics reset.
 
 ## Files
 
@@ -15,7 +16,7 @@ A lightweight New Tab replacement with:
 - `background.js`: robust domain time tracking and context menu integration.
 - `index.html`: dashboard skeleton and modals.
 - `styles.css`: true-black minimalist UI styles.
-- `app.js`: rendering, state interactions, analytics aggregation.
+- `app.js`: rendering, state interactions, analytics aggregation, search/history/notes features.
 - `validate-extension.mjs`: local validator to catch missing/invalid manifest and referenced files.
 
 ## Manifest permissions (why they are needed)
