@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Antigravity Productivity Dashboard",
+  "description": "A true-black new tab productivity dashboard with shortcuts, smart suggestions, folders, and usage analytics.",
+  "version": "1.0.0",
+  "permissions": [
+    "storage",
+    "tabs",
+    "idle",
+    "contextMenus",
+    "topSites",
+    "history"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "action": {
+    "default_title": "Antigravity Dashboard"
+  }
+}
