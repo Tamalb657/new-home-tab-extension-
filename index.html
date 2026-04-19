@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Antigravity Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="top-bar">
+        <h1>Dashboard</h1>
+        <button id="analytics-btn" class="icon-btn" aria-label="Open analytics">◴</button>
+      </header>
+
+      <section>
+        <h2 class="section-title">Smart Suggestions</h2>
+        <div id="suggestions" class="grid tiles-grid"></div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Shortcuts</h2>
+        <div id="shortcuts" class="grid tiles-grid"></div>
+      </section>
+    </main>
+
+    <dialog id="folder-modal" class="modal">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h3 id="folder-modal-title">Folder</h3>
+          <button id="folder-close" class="icon-btn">✕</button>
+        </header>
+        <div id="folder-items" class="grid tiles-grid"></div>
+      </div>
+    </dialog>
+
+    <dialog id="analytics-modal" class="modal">
+      <div class="modal-content analytics-content">
+        <header class="modal-header">
+          <h3>Usage Analytics</h3>
+          <button id="analytics-close" class="icon-btn">✕</button>
+        </header>
+        <div class="analytics-controls">
+          <button class="range-btn active" data-range="today">Today</button>
+          <button class="range-btn" data-range="7d">7 Days</button>
+          <button class="range-btn" data-range="30d">30 Days</button>
+        </div>
+        <div id="analytics-chart" class="analytics-chart"></div>
+      </div>
+    </dialog>
+
+    <template id="tile-template">
+      <button class="tile" type="button">
+        <img class="tile-icon" alt="" />
+        <span class="tile-label"></span>
+      </button>
+    </template>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
